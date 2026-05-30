@@ -2,27 +2,28 @@ import requests
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from web3 import Web3
 
 DATA_API = "https://data-api.polymarket.com"
-CLOB_API = "https://clob.polymarket.com"
+CLOB_HOST = "https://clob.polymarket.com"
 HEADERS = {'User-Agent': 'Mozilla/5.0'}
+
+PROXY_WALLET = Web3.to_checksum_address(os.getenv("PROXY_WALLET", "0x5fa918d6752074476d0fa68ae5618fc708c49945"))
 
 def get_clob_client():
     from py_clob_client.client import ClobClient
     from py_clob_client.constants import POLYGON
-    
+
     client = ClobClient(
         host=CLOB_HOST,
         key=os.getenv("PRIVATE_KEY"),
         chain_id=POLYGON,
         signature_type=2,
-        funder=os.getenv("PROXY_WALLET")
+        funder=PROXY_WALLET
     )
     creds = client.create_or_derive_api_creds()
     client.set_api_creds(creds)
     return client
-
-CLOB_HOST = "https://clob.polymarket.com"
 
 def load_snapshot():
     try:
@@ -42,7 +43,7 @@ def get_wallet_positions(wallet_address):
 
 def get_token_price(asset):
     try:
-        r = requests.get(f"{CLOB_API}/last-trade-price?token_id={asset}", headers=HEADERS, timeout=10)
+        r = requests.get(f"{CLOB_HOST}/last-trade-price?token_id={asset}", headers=HEADERS, timeout=10)
         if r.status_code == 200:
             return float(r.json().get("price", 0))
         return 0
@@ -105,7 +106,6 @@ def process_wallet(wallet, state, snapshot):
             if bet_amount <= 0:
                 continue
 
-            # Ejecutar orden real
             place_real_order(asset, bet_amount, avg_price, "BUY")
 
             new_pos = {
@@ -129,8 +129,7 @@ def process_wallet(wallet, state, snapshot):
     for pos in list(state["positions"]):
         if pos["wallet"] == address and pos["condition_id"] not in current_ids:
             current_price = get_token_price(pos["asset"])
-            
-            # Ejecutar venta real
+
             place_real_order(pos["asset"], pos["shares"], current_price, "SELL")
 
             pnl = (current_price - pos["entry_price"]) * pos["shares"]
@@ -156,3 +155,4 @@ def update_positions(state):
                 f.result()
             except Exception as e:
                 print(f"Error: {e}")
+                
