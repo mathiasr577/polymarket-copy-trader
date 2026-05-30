@@ -1,28 +1,13 @@
 [
     {
-        "address": "0x9495425feeb0c250accb89275c97587011b19a27",
-        "category": "sports",
-        "note": "LaBradfordSmith22 - #1 mensual"
-    },
-    {
         "address": "0xa5ea13a81d2b7e8e424b182bdc1db08e756bd96a",
         "category": "sports",
         "note": "bossoskil1 - #2 mensual"
     },
     {
-        "address": "0x9f2fe025f84839ca81dd8e0338892605702d2ca8",
-        "category": "sports",
-        "note": "surfandturf - #3 mensual"
-    },
-    {
         "address": "0x204f72f35326db932158cba6adff0b9a1da95e14",
         "category": "sports",
         "note": "swisstony - #4 mensual"
-    },
-    {
-        "address": "0xc2e7800b5af46e6093872b177b7a5e7f0563be51",
-        "category": "politics",
-        "note": "beachboy4 - #6 mensual"
     },
     {
         "address": "0xde7be6d489bce070a959e0cb813128ae659b5f4b",
@@ -35,11 +20,6 @@
         "note": "JewishNinja - #12 mensual"
     },
     {
-        "address": "0x65b54274eba5c76dee6f0fab18a590653811e82f",
-        "category": "sports",
-        "note": "lovelystuff - #6 mensual"
-    },
-    {
         "address": "0xfbf3d501e88815464642d0e913f15379c3eeb218",
         "category": "sports",
         "note": "VPenguin - #8 mensual"
@@ -50,63 +30,13 @@
         "note": "ferrariChampions2026 - #12 mensual"
     },
     {
-        "address": "0xa53c26443fb636d8ae31ac24f62fc1d5ef8f67a5",
-        "category": "sports",
-        "note": "Oddn - #16 mensual"
-    },
-    {
-        "address": "0x9ac2536ed93f8fe8ce91d9662b03bcbb19ccbe3d",
-        "category": "sports",
-        "note": "ChloeT1 - #17 mensual"
-    },
-    {
-        "address": "0x9b1e0334569aa1768a07705a859686aad58e82c9",
-        "category": "sports",
-        "note": "FullPicks1 - #19 mensual"
-    },
-    {
-        "address": "0xd7f85d0eb0fe0732ca38d9107ad0d4d01b1289e4",
-        "category": "sports",
-        "note": "tdrhrhhd - #26 mensual"
-    },
-    {
-        "address": "0x57cd939930fd119067ca9dc42b22b3e15708a0fb",
-        "category": "sports",
-        "note": "Supah9ga - #24 mensual"
-    },
-    {
-        "address": "0xea2b4224411e723499a803ce3f4758779fb31fc6",
-        "category": "sports",
-        "note": "frankfrankfrank - #25 mensual"
-    },
-    {
         "address": "0xe8dd7741ccb12350957ec71e9ee332e0d1e6ec86",
         "category": "finance",
         "note": "influenz.eth - #1 finanzas"
     },
     {
-        "address": "0xaaddfa107f870155547ed77d11b540b70dc2d3f1",
-        "category": "finance",
-        "note": "yxj425 - #5 finanzas"
-    },
-    {
-        "address": "0x1cc16713196d456f86fa9c7387dd326a7f73b8df",
-        "category": "politics",
-        "note": "Wickier - #1 menciones"
-    },
-    {
         "address": "0xbd0477e08d82d35a855ff19644a88a9213d8fbb0",
         "category": "politics",
         "note": "yuhyuhyuhy - #2 menciones"
-    },
-    {
-        "address": "0x134a63b764ac7b008356e8db1857db94e6b09e42",
-        "category": "politics",
-        "note": "Bertapotamous - #4 menciones"
-    },
-    {
-        "address": "0x3ab5ad27c676c4be1218397912eab5396e6de56f",
-        "category": "tech",
-        "note": "Obama - #6 tech"
     }
 ]
