@@ -4,6 +4,12 @@ import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from web3 import Web3
 
+# Setear proxy para todas las requests
+proxy_url = os.getenv("PROXY_URL", "")
+if proxy_url:
+    os.environ["HTTP_PROXY"] = proxy_url
+    os.environ["HTTPS_PROXY"] = proxy_url
+
 DATA_API = "https://data-api.polymarket.com"
 CLOB_HOST = "https://clob.polymarket.com"
 HEADERS = {'User-Agent': 'Mozilla/5.0'}
