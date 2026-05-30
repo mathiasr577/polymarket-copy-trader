@@ -22,7 +22,8 @@ def get_clob_client():
         host=CLOB_HOST,
         key=os.getenv("PRIVATE_KEY"),
         chain_id=POLYGON,
-        signature_type=0
+        signature_type=1,
+        funder=os.getenv("PROXY_WALLET")
     )
     creds = client.create_or_derive_api_creds()
     client.set_api_creds(creds)
@@ -63,7 +64,8 @@ def place_real_order(token_id, amount_usdc, price, side="BUY"):
             host=CLOB_HOST,
             key=os.getenv("PRIVATE_KEY"),
             chain_id=POLYGON,
-            signature_type=0
+            signature_type=1,
+            funder=os.getenv("PROXY_WALLET")
         )
         creds = client.create_or_derive_api_creds()
         client.set_api_creds(creds)
