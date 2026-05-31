@@ -66,13 +66,11 @@ def process_wallet(wallet, state, order_queue, snapshot):
                        and p["wallet"] == address), None)
 
         if not existing and size > 0 and avg_price > 0:
-            # FILTRO: no copiar mercados casi resueltos
             current_price = get_token_price(asset)
             if current_price < 0.05 or current_price > 0.95:
                 print(f"SKIP (mercado casi resuelto): {title} | precio actual: {current_price}")
                 continue
 
-            # FILTRO: no copiar si el precio subió más de 50% desde entry
             if avg_price > 0 and current_price > avg_price * 1.5:
                 print(f"SKIP (entrada muy tarde): {title} | entry: {avg_price} | ahora: {current_price}")
                 continue
