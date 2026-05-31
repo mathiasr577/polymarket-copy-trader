@@ -2,13 +2,6 @@ import requests
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from web3 import Web3
-
-# Setear proxy para todas las requests
-proxy_url = os.getenv("PROXY_URL", "")
-if proxy_url:
-    os.environ["HTTP_PROXY"] = proxy_url
-    os.environ["HTTPS_PROXY"] = proxy_url
 
 DATA_API = "https://data-api.polymarket.com"
 CLOB_HOST = "https://clob.polymarket.com"
@@ -16,6 +9,12 @@ HEADERS = {'User-Agent': 'Mozilla/5.0'}
 
 def get_clob_client():
     from py_clob_client_v2 import ClobClient
+    
+    proxy_url = os.getenv("PROXY_URL", "")
+    if proxy_url:
+        os.environ["HTTP_PROXY"] = proxy_url
+        os.environ["HTTPS_PROXY"] = proxy_url
+
     client = ClobClient(
         host=CLOB_HOST,
         chain_id=137,
@@ -55,6 +54,11 @@ def place_real_order(token_id, amount_usdc, price, side="BUY"):
         from py_clob_client_v2 import ClobClient
         from py_clob_client_v2.clob_types import OrderArgs
 
+        proxy_url = os.getenv("PROXY_URL", "")
+        if proxy_url:
+            os.environ["HTTP_PROXY"] = proxy_url
+            os.environ["HTTPS_PROXY"] = proxy_url
+
         client = ClobClient(
             host=CLOB_HOST,
             chain_id=137,
@@ -76,6 +80,10 @@ def place_real_order(token_id, amount_usdc, price, side="BUY"):
     except Exception as e:
         print(f"Error orden real: {e}")
         return None
+    finally:
+        # Limpiar proxy después de la orden
+        os.environ.pop("HTTP_PROXY", None)
+        os.environ.pop("HTTPS_PROXY", None)
 
 def process_wallet(wallet, state, snapshot):
     address = wallet.get("address")
