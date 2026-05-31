@@ -1,6 +1,6 @@
 from flask import Flask, render_template, jsonify, request
 from apscheduler.schedulers.background import BackgroundScheduler
-import json, os
+import json, os, requests
 from dotenv import load_dotenv
 from tracker import update_positions
 
@@ -8,11 +8,10 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Cola de órdenes pendientes para ejecutar desde la Mac
 order_queue = []
 
 state = {
-    "balance": 447.65,
+    "balance": 76.79,
     "positions": [],
     "closed_positions": [],
     "total_pnl": 0.0
@@ -20,16 +19,17 @@ state = {
 
 def get_real_balance():
     try:
-        from py_clob_client_v2 import ClobClient
-        client = ClobClient(
-            host="https://clob.polymarket.com",
-            chain_id=137,
-            key=os.getenv("PRIVATE_KEY"),
+        proxy_wallet = os.getenv("PROXY_WALLET", "0x5fa918d6752074476dCfa68ae5618fC70Bc49945")
+        r = requests.get(
+            f"https://data-api.polymarket.com/value?user={proxy_wallet}",
+            headers={'User-Agent': 'Mozilla/5.0'},
+            timeout=10
         )
-        creds = client.create_or_derive_api_key()
-        client.set_api_creds(creds)
-        balance = client.get_balance()
-        return float(balance)
+        if r.status_code == 200:
+            data = r.json()
+            cash = float(data.get("cashBalance", 0))
+            return cash
+        return 0
     except Exception as e:
         print(f"Error leyendo balance: {e}")
         return 0

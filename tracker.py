@@ -66,11 +66,21 @@ def process_wallet(wallet, state, order_queue, snapshot):
                        and p["wallet"] == address), None)
 
         if not existing and size > 0 and avg_price > 0:
-            bet_amount = state["balance"] * 0.05
-            if bet_amount <= 0:
+            # FILTRO: no copiar mercados casi resueltos
+            current_price = get_token_price(asset)
+            if current_price < 0.05 or current_price > 0.95:
+                print(f"SKIP (mercado casi resuelto): {title} | precio actual: {current_price}")
                 continue
 
-            # Agregar a cola en vez de ejecutar directo
+            # FILTRO: no copiar si el precio subió más de 50% desde entry
+            if avg_price > 0 and current_price > avg_price * 1.5:
+                print(f"SKIP (entrada muy tarde): {title} | entry: {avg_price} | ahora: {current_price}")
+                continue
+
+            bet_amount = state["balance"] * 0.05
+            if bet_amount < 1:
+                continue
+
             order_queue.append({
                 "token_id": asset,
                 "amount": bet_amount,
@@ -102,7 +112,6 @@ def process_wallet(wallet, state, order_queue, snapshot):
         if pos["wallet"] == address and pos["condition_id"] not in current_ids:
             current_price = get_token_price(pos["asset"])
 
-            # Agregar venta a cola
             order_queue.append({
                 "token_id": pos["asset"],
                 "amount": pos["shares"],
