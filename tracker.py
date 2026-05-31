@@ -15,16 +15,13 @@ CLOB_HOST = "https://clob.polymarket.com"
 HEADERS = {'User-Agent': 'Mozilla/5.0'}
 
 def get_clob_client():
-    from py_clob_client.client import ClobClient
-    from py_clob_client.constants import POLYGON
-
+    from py_clob_client_v2 import ClobClient
     client = ClobClient(
         host=CLOB_HOST,
+        chain_id=137,
         key=os.getenv("PRIVATE_KEY"),
-        chain_id=POLYGON,
-        signature_type=0
     )
-    creds = client.create_or_derive_api_creds()
+    creds = client.create_or_derive_api_key()
     client.set_api_creds(creds)
     return client
 
@@ -55,31 +52,27 @@ def get_token_price(asset):
 
 def place_real_order(token_id, amount_usdc, price, side="BUY"):
     try:
-        from py_clob_client.client import ClobClient
-        from py_clob_client.clob_types import OrderArgs
-        from py_clob_client.constants import POLYGON
+        from py_clob_client_v2 import ClobClient
+        from py_clob_client_v2.clob_types import OrderArgs
 
         client = ClobClient(
             host=CLOB_HOST,
+            chain_id=137,
             key=os.getenv("PRIVATE_KEY"),
-            chain_id=POLYGON,
-            signature_type=0
         )
-        creds = client.create_or_derive_api_creds()
+        creds = client.create_or_derive_api_key()
         client.set_api_creds(creds)
 
         size = round(amount_usdc / price, 2) if side == "BUY" else round(amount_usdc, 2)
 
-        order_args = OrderArgs(
+        order = client.create_and_post_order(OrderArgs(
             token_id=token_id,
             price=round(price, 4),
             size=size,
-            side=side
-        )
-
-        resp = client.create_and_post_order(order_args)
-        print(f"Orden real {side}: {resp}")
-        return resp
+            side=side,
+        ))
+        print(f"Orden real {side}: {order}")
+        return order
     except Exception as e:
         print(f"Error orden real: {e}")
         return None

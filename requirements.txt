@@ -3,5 +3,5 @@ requests
 python-dotenv
 apscheduler
 gunicorn
-py-clob-client
+py-clob-client-v2
 web3
