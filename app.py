@@ -3,36 +3,38 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import json, os
 from dotenv import load_dotenv
 from tracker import update_positions
-from web3 import Web3
 
 load_dotenv()
 
 app = Flask(__name__)
 
-RPC = "https://rpc-mainnet.matic.quiknode.pro"
-USDC_POLYGON = Web3.to_checksum_address("0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359")
-EOA = Web3.to_checksum_address("0x2c8e572FCfC99029eec2288ea5C3AE0C4e22E9CB")
-
-USDC_ABI = [{"name": "balanceOf", "type": "function", "inputs": [{"name": "account", "type": "address"}], "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view"}]
-
 def get_real_balance():
     try:
-        w3 = Web3(Web3.HTTPProvider(RPC))
-        contract = w3.eth.contract(address=USDC_POLYGON, abi=USDC_ABI)
-        balance = contract.functions.balanceOf(EOA).call()
-        return balance / 1e6
-    except:
+        from py_clob_client_v2 import ClobClient
+        client = ClobClient(
+            host="https://clob.polymarket.com",
+            chain_id=137,
+            key=os.getenv("PRIVATE_KEY"),
+        )
+        creds = client.create_or_derive_api_key()
+        client.set_api_creds(creds)
+        balance = client.get_balance()
+        return float(balance)
+    except Exception as e:
+        print(f"Error leyendo balance: {e}")
         return 0
 
 state = {
-    "balance": get_real_balance(),
+    "balance": 447.65,
     "positions": [],
     "closed_positions": [],
     "total_pnl": 0.0
 }
 
 def job():
-    state["balance"] = get_real_balance()
+    bal = get_real_balance()
+    if bal > 0:
+        state["balance"] = bal
     update_positions(state)
 
 scheduler = BackgroundScheduler()
