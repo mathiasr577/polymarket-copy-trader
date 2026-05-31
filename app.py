@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from apscheduler.schedulers.background import BackgroundScheduler
 import json, os
 from dotenv import load_dotenv
@@ -7,6 +7,16 @@ from tracker import update_positions
 load_dotenv()
 
 app = Flask(__name__)
+
+# Cola de órdenes pendientes para ejecutar desde la Mac
+order_queue = []
+
+state = {
+    "balance": 447.65,
+    "positions": [],
+    "closed_positions": [],
+    "total_pnl": 0.0
+}
 
 def get_real_balance():
     try:
@@ -24,18 +34,11 @@ def get_real_balance():
         print(f"Error leyendo balance: {e}")
         return 0
 
-state = {
-    "balance": 447.65,
-    "positions": [],
-    "closed_positions": [],
-    "total_pnl": 0.0
-}
-
 def job():
     bal = get_real_balance()
     if bal > 0:
         state["balance"] = bal
-    update_positions(state)
+    update_positions(state, order_queue)
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(job, 'interval', seconds=30)
@@ -68,6 +71,16 @@ def get_wallets():
             return jsonify(json.load(f))
     except:
         return jsonify([])
+
+@app.route('/api/queue')
+def get_queue():
+    return jsonify(order_queue)
+
+@app.route('/api/queue/clear', methods=['POST'])
+def clear_queue():
+    global order_queue
+    order_queue = []
+    return jsonify({"ok": True})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))

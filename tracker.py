@@ -7,23 +7,6 @@ DATA_API = "https://data-api.polymarket.com"
 CLOB_HOST = "https://clob.polymarket.com"
 HEADERS = {'User-Agent': 'Mozilla/5.0'}
 
-def get_clob_client():
-    from py_clob_client_v2 import ClobClient
-    
-    proxy_url = os.getenv("PROXY_URL", "")
-    if proxy_url:
-        os.environ["HTTP_PROXY"] = proxy_url
-        os.environ["HTTPS_PROXY"] = proxy_url
-
-    client = ClobClient(
-        host=CLOB_HOST,
-        chain_id=137,
-        key=os.getenv("PRIVATE_KEY"),
-    )
-    creds = client.create_or_derive_api_key()
-    client.set_api_creds(creds)
-    return client
-
 def load_snapshot():
     try:
         with open("snapshot.json") as f:
@@ -49,43 +32,7 @@ def get_token_price(asset):
     except:
         return 0
 
-def place_real_order(token_id, amount_usdc, price, side="BUY"):
-    try:
-        from py_clob_client_v2 import ClobClient
-        from py_clob_client_v2.clob_types import OrderArgs
-
-        proxy_url = os.getenv("PROXY_URL", "")
-        if proxy_url:
-            os.environ["HTTP_PROXY"] = proxy_url
-            os.environ["HTTPS_PROXY"] = proxy_url
-
-        client = ClobClient(
-            host=CLOB_HOST,
-            chain_id=137,
-            key=os.getenv("PRIVATE_KEY"),
-        )
-        creds = client.create_or_derive_api_key()
-        client.set_api_creds(creds)
-
-        size = round(amount_usdc / price, 2) if side == "BUY" else round(amount_usdc, 2)
-
-        order = client.create_and_post_order(OrderArgs(
-            token_id=token_id,
-            price=round(price, 4),
-            size=size,
-            side=side,
-        ))
-        print(f"Orden real {side}: {order}")
-        return order
-    except Exception as e:
-        print(f"Error orden real: {e}")
-        return None
-    finally:
-        # Limpiar proxy después de la orden
-        os.environ.pop("HTTP_PROXY", None)
-        os.environ.pop("HTTPS_PROXY", None)
-
-def process_wallet(wallet, state, snapshot):
+def process_wallet(wallet, state, order_queue, snapshot):
     address = wallet.get("address")
     category = wallet.get("category", "general")
     known_ids = snapshot.get(address, [])
@@ -123,7 +70,16 @@ def process_wallet(wallet, state, snapshot):
             if bet_amount <= 0:
                 continue
 
-            place_real_order(asset, bet_amount, avg_price, "BUY")
+            # Agregar a cola en vez de ejecutar directo
+            order_queue.append({
+                "token_id": asset,
+                "amount": bet_amount,
+                "price": avg_price,
+                "side": "BUY",
+                "market": title,
+                "condition_id": condition_id
+            })
+            print(f"NUEVA en cola: {title} | {outcome} | ${bet_amount:.2f}")
 
             new_pos = {
                 "wallet": address,
@@ -141,13 +97,21 @@ def process_wallet(wallet, state, snapshot):
             }
             state["positions"].append(new_pos)
             state["balance"] -= bet_amount
-            print(f"NUEVA: {title} | {outcome} | ${bet_amount:.2f}")
 
     for pos in list(state["positions"]):
         if pos["wallet"] == address and pos["condition_id"] not in current_ids:
             current_price = get_token_price(pos["asset"])
 
-            place_real_order(pos["asset"], pos["shares"], current_price, "SELL")
+            # Agregar venta a cola
+            order_queue.append({
+                "token_id": pos["asset"],
+                "amount": pos["shares"],
+                "price": current_price,
+                "side": "SELL",
+                "market": pos["market"],
+                "condition_id": pos["condition_id"]
+            })
+            print(f"VENTA en cola: {pos['market']} | ${current_price:.3f}")
 
             pnl = (current_price - pos["entry_price"]) * pos["shares"]
             pos["pnl"] = pnl
@@ -155,9 +119,8 @@ def process_wallet(wallet, state, snapshot):
             state["total_pnl"] += pnl
             state["closed_positions"].append(pos)
             state["positions"].remove(pos)
-            print(f"CERRADA: {pos['market']} | PNL: ${pnl:.2f}")
 
-def update_positions(state):
+def update_positions(state, order_queue):
     snapshot = load_snapshot()
     try:
         with open("wallets.json") as f:
@@ -166,7 +129,7 @@ def update_positions(state):
         return
 
     with ThreadPoolExecutor(max_workers=8) as executor:
-        futures = [executor.submit(process_wallet, w, state, snapshot) for w in wallets]
+        futures = [executor.submit(process_wallet, w, state, order_queue, snapshot) for w in wallets]
         for f in as_completed(futures):
             try:
                 f.result()
