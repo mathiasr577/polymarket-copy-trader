@@ -28,7 +28,8 @@ def get_real_balance(client):
     try:
         balance = client.get_balance()
         return float(balance)
-    except:
+    except Exception as e:
+        print(f"Error balance: {e}")
         return 0
 
 def report_balance(balance):
@@ -41,9 +42,12 @@ def execute_order(order, client):
     try:
         from py_clob_client_v2.clob_types import OrderArgs
         balance = get_real_balance(client)
+        if balance <= 0:
+            print(f"Sin balance para {order['market']}")
+            return False
         bet_amount = balance * 0.05
         if bet_amount < 1:
-            print(f"⚠️ Saldo insuficiente (${balance:.2f}) para {order['market']}")
+            print(f"Balance muy bajo (${balance:.2f}) para {order['market']}")
             return False
         size = round(bet_amount / order["price"], 2) if order["side"] == "BUY" else round(order["amount"], 2)
         size = max(size, 5.0)
@@ -53,26 +57,25 @@ def execute_order(order, client):
             size=size,
             side=order["side"],
         ))
-        print(f"✅ Orden ejecutada: {order['side']} {order['market']} | ${bet_amount:.2f} | {resp}")
+        print(f"Orden ejecutada: {order['side']} {order['market']} | ${bet_amount:.2f} | {resp}")
         return True
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Error orden: {e}")
         return False
 
 def run():
-    print("🟢 Executor corriendo — esperando órdenes de Railway...")
+    print("Executor corriendo en Railway...")
     client = get_client()
     while True:
         try:
             balance = get_real_balance(client)
             if balance > 0:
                 report_balance(balance)
-                print(f"💰 Balance reportado: ${balance:.2f}")
-
-            r = requests.get(f"{RAILWAY_URL}/api/queue")
+                print(f"Balance: ${balance:.2f}")
+            r = requests.get(f"{RAILWAY_URL}/api/queue", timeout=10)
             orders = r.json()
             if orders:
-                print(f"{len(orders)} órdenes en cola")
+                print(f"{len(orders)} ordenes en cola")
                 for order in orders:
                     if order["side"] == "BUY":
                         execute_order(order, client)
@@ -80,7 +83,10 @@ def run():
                 requests.post(f"{RAILWAY_URL}/api/queue/clear")
         except Exception as e:
             print(f"Error: {e}")
-            client = get_client()
+            try:
+                client = get_client()
+            except:
+                pass
         time.sleep(30)
 
 if __name__ == "__main__":
