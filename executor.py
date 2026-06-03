@@ -28,10 +28,9 @@ def get_real_balance(client):
     try:
         from py_clob_client_v2.clob_types import BalanceAllowanceParams, AssetType
         result = client.get_balance_allowance(params=BalanceAllowanceParams(asset_type=AssetType.COLLATERAL))
-        balance_raw = int(result.get("balance", 0))
-        return balance_raw / 1_000_000
+        return int(result.get("balance", 0)) / 1_000_000
     except Exception as e:
-        print(f"Error balance: {e}")
+        print(f"Error leyendo balance: {e}")
         return 0
 
 def report_balance(balance):
@@ -40,16 +39,12 @@ def report_balance(balance):
     except:
         pass
 
-def execute_order(order, client):
+def execute_order(order, client, balance):
     try:
         from py_clob_client_v2.clob_types import OrderArgs
-        balance = get_real_balance(client)
-        if balance <= 0:
-            print(f"Sin balance para {order['market']}")
-            return False
         bet_amount = balance * 0.05
         if bet_amount < 1:
-            print(f"Balance muy bajo (${balance:.2f}) para {order['market']}")
+            print(f"Balance muy bajo (${balance:.2f}) — saltando {order['market']}")
             return False
         size = round(bet_amount / order["price"], 2) if order["side"] == "BUY" else round(order["amount"], 2)
         size = max(size, 1.0)
@@ -59,36 +54,67 @@ def execute_order(order, client):
             size=size,
             side=order["side"],
         ))
-        print(f"Orden ejecutada: {order['side']} {order['market']} | ${bet_amount:.2f} | {resp}")
-        return True
+        success = resp.get("success", False)
+        if success:
+            print(f"✅ {order['side']} {order['market']} | ${bet_amount:.2f} | {resp.get('status')}")
+        else:
+            print(f"❌ Falló: {order['market']} | {resp.get('errorMsg')}")
+        return success
     except Exception as e:
-        print(f"Error orden: {e}")
+        print(f"❌ Error: {order['market']} | {e}")
         return False
 
 def run():
-    print("Executor corriendo en Railway...")
+    print("🟢 Executor iniciando en Railway...")
     client = get_client()
+
+    # Limpiar cola al arrancar
+    try:
+        requests.post(f"{RAILWAY_URL}/api/queue/clear")
+        print("Cola limpiada al arrancar")
+    except:
+        pass
+
+    cycle = 0
     while True:
         try:
             balance = get_real_balance(client)
+
+            # Reportar balance y loguearlo cada 10 ciclos (5 minutos)
             if balance > 0:
                 report_balance(balance)
-                print(f"Balance real: ${balance:.2f}")
+                if cycle % 10 == 0:
+                    print(f"💰 Balance: ${balance:.2f} | 5%: ${balance * 0.05:.2f}")
+
             r = requests.get(f"{RAILWAY_URL}/api/queue", timeout=10)
             orders = r.json()
+
             if orders:
-                print(f"{len(orders)} ordenes en cola")
+                print(f"📋 {len(orders)} ordenes en cola")
+                executed = 0
                 for order in orders:
                     if order["side"] == "BUY":
-                        execute_order(order, client)
-                        time.sleep(2)
+                        # Releer balance antes de cada orden
+                        balance = get_real_balance(client)
+                        if balance < 1:
+                            print(f"Sin balance suficiente, parando ejecución")
+                            break
+                        success = execute_order(order, client, balance)
+                        if success:
+                            executed += 1
+                        time.sleep(4)
                 requests.post(f"{RAILWAY_URL}/api/queue/clear")
+                if executed > 0:
+                    print(f"✅ {executed} ordenes ejecutadas")
+
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Error en ciclo: {e}")
             try:
                 client = get_client()
             except:
                 pass
+
+        cycle += 1
         time.sleep(30)
 
 if __name__ == "__main__":
