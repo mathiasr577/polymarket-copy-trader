@@ -42,21 +42,29 @@ def report_balance(balance):
 def execute_order(order, client, balance):
     try:
         from py_clob_client_v2.clob_types import OrderArgs
-        bet_amount = balance * 0.05
-        if bet_amount < 1:
-            print(f"Balance muy bajo (${balance:.2f}) — saltando {order['market']}")
-            return False
-        size = round(bet_amount / order["price"], 2) if order["side"] == "BUY" else round(order["amount"], 2)
-        size = max(size, 1.0)
+        side = order["side"]
+
+        if side == "BUY":
+            bet_amount = balance * 0.05
+            if bet_amount < 1:
+                print(f"Balance muy bajo (${balance:.2f}) — saltando {order['market']}")
+                return False
+            size = round(bet_amount / order["price"], 2)
+            size = max(size, 5.0)
+        else:  # SELL
+            size = round(float(order["amount"]), 2)
+            size = max(size, 5.0)
+
         resp = client.create_and_post_order(OrderArgs(
             token_id=order["token_id"],
             price=round(order["price"], 4),
             size=size,
-            side=order["side"],
+            side=side,
         ))
+        status = resp.get("status", "")
         success = resp.get("success", False)
         if success:
-            print(f"✅ {order['side']} {order['market']} | ${bet_amount:.2f} | {resp.get('status')}")
+            print(f"✅ {side} {order['market']} | {status}")
         else:
             print(f"❌ Falló: {order['market']} | {resp.get('errorMsg')}")
         return success
@@ -68,7 +76,6 @@ def run():
     print("🟢 Executor iniciando en Railway...")
     client = get_client()
 
-    # Limpiar cola al arrancar
     try:
         requests.post(f"{RAILWAY_URL}/api/queue/clear")
         print("Cola limpiada al arrancar")
@@ -80,7 +87,6 @@ def run():
         try:
             balance = get_real_balance(client)
 
-            # Reportar balance y loguearlo cada 10 ciclos (5 minutos)
             if balance > 0:
                 report_balance(balance)
                 if cycle % 10 == 0:
@@ -93,16 +99,11 @@ def run():
                 print(f"📋 {len(orders)} ordenes en cola")
                 executed = 0
                 for order in orders:
-                    if order["side"] == "BUY":
-                        # Releer balance antes de cada orden
-                        balance = get_real_balance(client)
-                        if balance < 1:
-                            print(f"Sin balance suficiente, parando ejecución")
-                            break
-                        success = execute_order(order, client, balance)
-                        if success:
-                            executed += 1
-                        time.sleep(4)
+                    balance = get_real_balance(client)
+                    success = execute_order(order, client, balance)
+                    if success:
+                        executed += 1
+                    time.sleep(4)
                 requests.post(f"{RAILWAY_URL}/api/queue/clear")
                 if executed > 0:
                     print(f"✅ {executed} ordenes ejecutadas")
