@@ -1,1 +1,1 @@
-web: gunicorn app:appexecutor: python executor.py
+web: gunicorn app:app
