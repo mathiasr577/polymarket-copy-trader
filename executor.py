@@ -24,10 +24,17 @@ def get_client():
     ))
     return client
 
-def get_real_balance(client):
+def get_real_balance():
     try:
-        balance = client.get_balance()
-        return float(balance)
+        r = requests.get(
+            f"https://data-api.polymarket.com/value?user={DEPOSIT_WALLET}",
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=10
+        )
+        data = r.json()
+        if isinstance(data, list) and len(data) > 0:
+            return float(data[0].get("value", 0))
+        return 0
     except Exception as e:
         print(f"Error balance: {e}")
         return 0
@@ -41,10 +48,7 @@ def report_balance(balance):
 def execute_order(order, client):
     try:
         from py_clob_client_v2.clob_types import OrderArgs
-        balance = get_real_balance(client)
-        if balance <= 0:
-            print(f"Sin balance para {order['market']}")
-            return False
+        balance = get_real_balance()
         bet_amount = balance * 0.05
         if bet_amount < 1:
             print(f"Balance muy bajo (${balance:.2f}) para {order['market']}")
@@ -68,7 +72,7 @@ def run():
     client = get_client()
     while True:
         try:
-            balance = get_real_balance(client)
+            balance = get_real_balance()
             if balance > 0:
                 report_balance(balance)
                 print(f"Balance: ${balance:.2f}")
