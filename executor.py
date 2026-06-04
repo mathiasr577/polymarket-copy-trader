@@ -99,8 +99,6 @@ def run():
                 print(f"📋 {len(orders)} ordenes en cola")
                 executed = 0
                 for order in orders:
-                    # Releer balance actualizado antes de cada orden
-                    time.sleep(10)
                     balance = get_real_balance(client)
                     if balance < 1:
                         print(f"Sin balance suficiente (${balance:.2f}), parando")
@@ -108,6 +106,12 @@ def run():
                     success = execute_order(order, client, balance)
                     if success:
                         executed += 1
+                        for _ in range(10):
+                            time.sleep(3)
+                            new_balance = get_real_balance(client)
+                            if new_balance < balance:
+                                break
+                        balance = get_real_balance(client)
                 requests.post(f"{RAILWAY_URL}/api/queue/clear")
                 if executed > 0:
                     print(f"✅ {executed} ordenes ejecutadas")
