@@ -39,14 +39,6 @@ def report_balance(balance):
     except:
         pass
 
-def wait_for_balance_update(client, prev_balance):
-    for _ in range(15):
-        time.sleep(2)
-        new_balance = get_real_balance(client)
-        if new_balance <= prev_balance - 1:
-            return new_balance
-    return get_real_balance(client)
-
 def execute_order(order, client, balance):
     try:
         from py_clob_client_v2.clob_types import OrderArgs
@@ -105,7 +97,6 @@ def run():
 
             if orders:
                 print(f"📋 {len(orders)} ordenes en cola")
-                executed = 0
                 for order in orders:
                     balance = get_real_balance(client)
                     if balance < 1:
@@ -113,7 +104,8 @@ def run():
                         break
                     success = execute_order(order, client, balance)
                     if success and order["side"] == "BUY":
-                        balance = wait_for_balance_update(client, balance)
+                        print(f"⏳ Esperando balance on-chain...")
+                        time.sleep(15)
                 requests.post(f"{RAILWAY_URL}/api/queue/clear")
 
         except Exception as e:
