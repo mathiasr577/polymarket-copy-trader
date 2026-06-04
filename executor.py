@@ -51,7 +51,7 @@ def execute_order(order, client, balance):
                 return False
             size = round(bet_amount / order["price"], 2)
             size = max(size, 5.0)
-        else:  # SELL
+        else:
             size = round(float(order["amount"]), 2)
             size = max(size, 5.0)
 
@@ -99,11 +99,15 @@ def run():
                 print(f"📋 {len(orders)} ordenes en cola")
                 executed = 0
                 for order in orders:
+                    # Releer balance actualizado antes de cada orden
+                    time.sleep(10)
                     balance = get_real_balance(client)
+                    if balance < 1:
+                        print(f"Sin balance suficiente (${balance:.2f}), parando")
+                        break
                     success = execute_order(order, client, balance)
                     if success:
                         executed += 1
-                    time.sleep(4)
                 requests.post(f"{RAILWAY_URL}/api/queue/clear")
                 if executed > 0:
                     print(f"✅ {executed} ordenes ejecutadas")
