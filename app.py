@@ -11,33 +11,35 @@ app = Flask(__name__)
 order_queue = []
 
 state = {
-    "balance": 76.79,
+    "balance": 0,
+    "cash": 0,
+    "portfolio": 0,
     "positions": [],
     "closed_positions": [],
     "total_pnl": 0.0
 }
 
-def get_real_balance():
+PROXY_WALLET = os.getenv("PROXY_WALLET", "0x5fa918d6752074476dCfa68ae5618fC70Bc49945")
+
+def get_polymarket_data():
     try:
-        proxy_wallet = os.getenv("PROXY_WALLET", "0x5fa918d6752074476dCfa68ae5618fC70Bc49945")
         r = requests.get(
-            f"https://data-api.polymarket.com/value?user={proxy_wallet}",
+            f"https://data-api.polymarket.com/value?user={PROXY_WALLET}",
             headers={'User-Agent': 'Mozilla/5.0'},
             timeout=10
         )
         if r.status_code == 200:
             data = r.json()
-            cash = float(data.get("cashBalance", 0))
-            return cash
+            if isinstance(data, list) and len(data) > 0:
+                return float(data[0].get("value", 0))
         return 0
-    except Exception as e:
-        print(f"Error leyendo balance: {e}")
+    except:
         return 0
 
 def job():
-    bal = get_real_balance()
-    if bal > 0:
-        state["balance"] = bal
+    portfolio = get_polymarket_data()
+    if portfolio > 0:
+        state["portfolio"] = portfolio
     update_positions(state, order_queue)
 
 scheduler = BackgroundScheduler()
@@ -56,13 +58,44 @@ def get_state():
     except:
         wallets = []
 
+    open_pnl = sum(p.get("pnl", 0) for p in state["positions"])
+    closed_pnl = state["total_pnl"]
+    total_pnl = open_pnl + closed_pnl
+
+    wallet_stats = {}
+    for pos in state["positions"] + state["closed_positions"]:
+        wk = pos.get("wallet_note", pos.get("wallet", ""))
+        if wk not in wallet_stats:
+            wallet_stats[wk] = {"pnl": 0, "wins": 0, "total": 0, "open": 0}
+        wallet_stats[wk]["pnl"] += pos.get("pnl", 0)
+        wallet_stats[wk]["total"] += 1
+        if pos in state["closed_positions"]:
+            if pos.get("pnl", 0) > 0:
+                wallet_stats[wk]["wins"] += 1
+        else:
+            wallet_stats[wk]["open"] += 1
+
     return jsonify({
-        "balance": state["balance"],
+        "portfolio": round(state["portfolio"], 2),
+        "cash": round(state["cash"], 2),
+        "balance": round(state["balance"], 2),
+        "total_pnl": round(total_pnl, 2),
+        "open_pnl": round(open_pnl, 2),
+        "closed_pnl": round(closed_pnl, 2),
         "positions": state["positions"],
         "closed_positions": state["closed_positions"],
-        "total_pnl": state["total_pnl"],
+        "wallet_stats": wallet_stats,
         "wallets": wallets
     })
+
+@app.route('/api/update_balance', methods=['POST'])
+def update_balance():
+    data = request.get_json()
+    balance = data.get("balance", 0)
+    if balance > 0:
+        state["cash"] = balance
+        state["balance"] = balance
+    return jsonify({"ok": True})
 
 @app.route('/api/wallets')
 def get_wallets():

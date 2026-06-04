@@ -1,264 +1,164 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Polymarket Copy Trader</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0d0d0d; color: #fff; font-family: monospace; padding: 20px; }
-        h1 { color: #00ff88; margin-bottom: 20px; font-size: 1.4rem; }
-        
-        .tabs { display: flex; gap: 10px; margin-bottom: 25px; }
-        .tab { padding: 8px 20px; border-radius: 6px; cursor: pointer; border: 1px solid #333; background: #1a1a1a; color: #888; font-family: monospace; font-size: 0.85rem; }
-        .tab.active { border-color: #00ff88; color: #00ff88; }
-
-        .stats { display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; }
-        .stat-box { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 15px 20px; }
-        .stat-box .label { color: #888; font-size: 0.72rem; margin-bottom: 5px; }
-        .stat-box .value { font-size: 1.3rem; font-weight: bold; }
-        .green { color: #00ff88; }
-        .red { color: #ff4444; }
-        .gray { color: #888; }
-
-        table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
-        th { background: #1a1a1a; color: #888; padding: 10px; text-align: left; border-bottom: 1px solid #333; }
-        td { padding: 10px; border-bottom: 1px solid #1a1a1a; }
-        tr:hover td { background: #1a1a1a; }
-
-        .badge { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; }
-        .yes { background: #00ff8822; color: #00ff88; }
-        .no { background: #ff444422; color: #ff4444; }
-        .cat { background: #ffffff11; color: #aaa; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; }
-
-        .section-title { color: #888; margin: 20px 0 10px; font-size: 0.9rem; border-bottom: 1px solid #222; padding-bottom: 8px; }
-        .page { display: none; }
-        .page.active { display: block; }
-
-        .wallet-card { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .wallet-card .name { color: #00ff88; font-size: 0.9rem; margin-bottom: 4px; }
-        .wallet-card .addr { color: #555; font-size: 0.7rem; }
-        .wallet-card .stats-mini { display: flex; gap: 20px; text-align: right; }
-        .wallet-card .stat-mini { font-size: 0.75rem; }
-        .wallet-card .stat-mini .lbl { color: #666; margin-bottom: 2px; }
-
-        .last-update { color: #444; font-size: 0.7rem; margin-bottom: 15px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polymarket Bot</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0d1117; color: #e6edf3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 16px; max-width: 1200px; margin: 0 auto; }
+h1 { color: #00ff88; font-size: 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab { padding: 7px 16px; border-radius: 6px; cursor: pointer; border: 1px solid #30363d; background: #161b22; color: #8b949e; font-size: 13px; }
+.tab.active { background: #00ff88; color: #000; border-color: #00ff88; font-weight: 600; }
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
+.stat { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 16px; }
+.stat .label { font-size: 10px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.stat .value { font-size: 20px; font-weight: 700; }
+.green { color: #00ff88; }
+.red { color: #ff4444; }
+.gray { color: #8b949e; }
+.yellow { color: #f0c040; }
+table { width: 100%; border-collapse: collapse; background: #161b22; border-radius: 8px; overflow: hidden; margin-bottom: 20px; font-size: 12px; }
+th { background: #21262d; padding: 10px 12px; text-align: left; font-size: 10px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; }
+td { padding: 10px 12px; border-top: 1px solid #21262d; }
+.badge { padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+.yes { background: #1a4731; color: #00ff88; }
+.no { background: #4a1515; color: #ff4444; }
+.other { background: #1a2a4a; color: #58a6ff; }
+.page { display: none; }
+.page.active { display: block; }
+.wallet-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin-bottom: 10px; }
+.wallet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.wallet-name { font-weight: 600; font-size: 14px; }
+.wstats { display: flex; gap: 12px; flex-wrap: wrap; }
+.ws { text-align: center; background: #0d1117; border-radius: 6px; padding: 8px 12px; min-width: 70px; }
+.ws .wl { font-size: 9px; color: #8b949e; text-transform: uppercase; margin-bottom: 3px; }
+.ws .wv { font-size: 16px; font-weight: 700; }
+.updated { font-size: 10px; color: #8b949e; margin-bottom: 16px; }
+</style>
 </head>
 <body>
-    <h1>🟢 Polymarket Copy Trader</h1>
+<h1>🟢 Polymarket Bot</h1>
+<div class="updated" id="updated"></div>
 
-    <div class="tabs">
-        <button class="tab active" onclick="showPage('dashboard')">Dashboard</button>
-        <button class="tab" onclick="showPage('wallets')">Wallets</button>
-        <button class="tab" onclick="showPage('analysis')">Análisis</button>
-    </div>
+<div class="tabs">
+  <div class="tab active" onclick="showPage('dashboard', this)">Dashboard</div>
+  <div class="tab" onclick="showPage('wallets', this)">Wallets</div>
+  <div class="tab" onclick="showPage('abiertas', this)">Abiertas</div>
+  <div class="tab" onclick="showPage('cerradas', this)">Cerradas</div>
+</div>
 
-    <!-- DASHBOARD -->
-    <div id="page-dashboard" class="page active">
-        <div class="stats">
-            <div class="stat-box">
-                <div class="label">BALANCE</div>
-                <div class="value green" id="balance">$0.00</div>
+<div id="dashboard" class="page active">
+  <div class="stats" id="stats"></div>
+  <h2 style="color:#8b949e;font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Últimas posiciones</h2>
+  <table><thead><tr><th>Mercado</th><th>Side</th><th>Wallet</th><th>Entry</th><th>Current</th><th>Bet</th><th>PNL</th></tr></thead>
+  <tbody id="recent-body"></tbody></table>
+</div>
+
+<div id="wallets" class="page">
+  <div id="wallet-cards"></div>
+</div>
+
+<div id="abiertas" class="page">
+  <table><thead><tr><th>Mercado</th><th>Side</th><th>Wallet</th><th>Entry</th><th>Current</th><th>Bet</th><th>PNL</th></tr></thead>
+  <tbody id="open-body"></tbody></table>
+</div>
+
+<div id="cerradas" class="page">
+  <table><thead><tr><th>Mercado</th><th>Side</th><th>Wallet</th><th>Entry</th><th>Close</th><th>Bet</th><th>PNL</th></tr></thead>
+  <tbody id="closed-body"></tbody></table>
+</div>
+
+<script>
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+  el.classList.add('active');
+}
+
+function badge(side) {
+  const s = (side || '').toUpperCase();
+  if (s === 'YES') return `<span class="badge yes">YES</span>`;
+  if (s === 'NO') return `<span class="badge no">NO</span>`;
+  return `<span class="badge other">${side}</span>`;
+}
+
+function pc(v) { return v >= 0 ? 'green' : 'red'; }
+function ps(v) { return (v >= 0 ? '+' : '') + '$' + Math.abs(v).toFixed(2); }
+function pss(v) { return (v >= 0 ? '+' : '-') + '$' + Math.abs(v).toFixed(2); }
+
+async function load() {
+  try {
+    const r = await fetch('/api/state');
+    const d = await r.json();
+
+    const now = new Date().toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit'});
+    document.getElementById('updated').textContent = `Actualizado: ${now}`;
+
+    const closed = d.closed_positions || [];
+    const open = d.positions || [];
+    const wins = closed.filter(p => p.pnl > 0).length;
+    const wr = closed.length > 0 ? Math.round(wins / closed.length * 100) : 0;
+    const wrColor = wr >= 55 ? 'green' : wr >= 45 ? 'yellow' : 'red';
+
+    document.getElementById('stats').innerHTML = `
+      <div class="stat"><div class="label">Cash disponible</div><div class="value green">$${d.cash || d.balance}</div></div>
+      <div class="stat"><div class="label">Portfolio total</div><div class="value gray">$${d.portfolio || 0}</div></div>
+      <div class="stat"><div class="label">PNL Total</div><div class="value ${pc(d.total_pnl)}">${pss(d.total_pnl)}</div></div>
+      <div class="stat"><div class="label">PNL Abierto</div><div class="value ${pc(d.open_pnl)}">${pss(d.open_pnl)}</div></div>
+      <div class="stat"><div class="label">Win Rate</div><div class="value ${wrColor}">${wr}%</div></div>
+      <div class="stat"><div class="label">Abiertas</div><div class="value gray">${open.length}</div></div>
+      <div class="stat"><div class="label">Cerradas</div><div class="value gray">${closed.length}</div></div>
+    `;
+
+    const recientes = [...open].slice(-8).reverse();
+    document.getElementById('recent-body').innerHTML = recientes.map(p => `
+      <tr><td>${p.market}</td><td>${badge(p.side)}</td><td>${p.wallet_note||''}</td>
+      <td>$${p.entry_price.toFixed(3)}</td><td>$${p.current_price.toFixed(3)}</td>
+      <td>$${p.bet_amount.toFixed(2)}</td><td class="${pc(p.pnl)}">${ps(p.pnl)}</td></tr>
+    `).join('');
+
+    document.getElementById('open-body').innerHTML = open.map(p => `
+      <tr><td>${p.market}</td><td>${badge(p.side)}</td><td>${p.wallet_note||''}</td>
+      <td>$${p.entry_price.toFixed(3)}</td><td>$${p.current_price.toFixed(3)}</td>
+      <td>$${p.bet_amount.toFixed(2)}</td><td class="${pc(p.pnl)}">${ps(p.pnl)}</td></tr>
+    `).join('');
+
+    document.getElementById('closed-body').innerHTML = [...closed].reverse().map(p => `
+      <tr><td>${p.market}</td><td>${badge(p.side)}</td><td>${p.wallet_note||''}</td>
+      <td>$${p.entry_price.toFixed(3)}</td><td>$${(p.close_price||0).toFixed(3)}</td>
+      <td>$${p.bet_amount.toFixed(2)}</td><td class="${pc(p.pnl)}">${ps(p.pnl)}</td></tr>
+    `).join('');
+
+    const ws = d.wallet_stats || {};
+    document.getElementById('wallet-cards').innerHTML = Object.entries(ws)
+      .sort((a,b) => b[1].pnl - a[1].pnl)
+      .map(([name, s]) => {
+        const wr = s.total > 0 ? Math.round(s.wins / (s.total - s.open) * 100) || 0 : 0;
+        return `
+          <div class="wallet-card">
+            <div class="wallet-header">
+              <div class="wallet-name">${name}</div>
             </div>
-            <div class="stat-box">
-                <div class="label">TOTAL PNL</div>
-                <div class="value" id="total_pnl">+$0.00</div>
+            <div class="wstats">
+              <div class="ws"><div class="wl">PNL</div><div class="wv ${pc(s.pnl)}">${pss(s.pnl)}</div></div>
+              <div class="ws"><div class="wl">Win Rate</div><div class="wv ${s.wins/(s.total-s.open||1)>=.5?'green':'red'}">${wr}%</div></div>
+              <div class="ws"><div class="wl">Trades</div><div class="wv gray">${s.total}</div></div>
+              <div class="ws"><div class="wl">Abiertas</div><div class="wv gray">${s.open}</div></div>
+              <div class="ws"><div class="wl">Wins</div><div class="wv green">${s.wins}</div></div>
             </div>
-            <div class="stat-box">
-                <div class="label">OPEN</div>
-                <div class="value" id="open_count">0</div>
-            </div>
-            <div class="stat-box">
-                <div class="label">CLOSED</div>
-                <div class="value" id="closed_count">0</div>
-            </div>
-            <div class="stat-box">
-                <div class="label">PNL HOY</div>
-                <div class="value" id="unrealized_pnl">+$0.00</div>
-            </div>
-        </div>
-        <div class="last-update">Actualiza cada 30s — <span id="last_update">--</span></div>
+          </div>`;
+      }).join('');
 
-        <div class="section-title">POSICIONES ABIERTAS</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Mercado</th>
-                    <th>Side</th>
-                    <th>Cat</th>
-                    <th>Wallet</th>
-                    <th>Entry</th>
-                    <th>Current</th>
-                    <th>Bet</th>
-                    <th>PNL</th>
-                    <th>%</th>
-                </tr>
-            </thead>
-            <tbody id="open_positions"></tbody>
-        </table>
+  } catch(e) {
+    console.error(e);
+  }
+}
 
-        <div class="section-title" style="margin-top:30px">POSICIONES CERRADAS</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Mercado</th>
-                    <th>Side</th>
-                    <th>Cat</th>
-                    <th>Wallet</th>
-                    <th>Entry</th>
-                    <th>Exit</th>
-                    <th>Bet</th>
-                    <th>PNL</th>
-                    <th>%</th>
-                </tr>
-            </thead>
-            <tbody id="closed_positions"></tbody>
-        </table>
-    </div>
-
-    <!-- WALLETS -->
-    <div id="page-wallets" class="page">
-        <div class="section-title">WALLETS TRACKEADAS</div>
-        <div id="wallets_list"></div>
-    </div>
-
-    <!-- ANÁLISIS -->
-    <div id="page-analysis" class="page">
-        <div class="section-title">ANÁLISIS POR WALLET</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Wallet</th>
-                    <th>Categoría</th>
-                    <th>Trades</th>
-                    <th>Win Rate</th>
-                    <th>PNL Total</th>
-                    <th>Mejor Trade</th>
-                    <th>Peor Trade</th>
-                </tr>
-            </thead>
-            <tbody id="analysis_table"></tbody>
-        </table>
-    </div>
-
-    <script>
-        function showPage(name) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.getElementById('page-' + name).classList.add('active');
-            event.target.classList.add('active');
-        }
-
-        function fmt(n) { return (n >= 0 ? '+$' : '-$') + Math.abs(n).toFixed(2); }
-        function pct(entry, current) { return entry > 0 ? (((current - entry) / entry) * 100).toFixed(1) + '%' : '0%'; }
-        function cls(n) { return n >= 0 ? 'green' : 'red'; }
-
-        async function update() {
-            const res = await fetch('/api/state');
-            const data = await res.json();
-
-            // Stats
-            document.getElementById('balance').textContent = '$' + data.balance.toFixed(2);
-            const pnl = data.total_pnl;
-            const pnlEl = document.getElementById('total_pnl');
-            pnlEl.textContent = fmt(pnl);
-            pnlEl.className = 'value ' + cls(pnl);
-            document.getElementById('open_count').textContent = data.positions.length;
-            document.getElementById('closed_count').textContent = data.closed_positions.length;
-            document.getElementById('last_update').textContent = new Date().toLocaleTimeString();
-
-            // Unrealized PNL
-            const unrealized = data.positions.reduce((sum, p) => sum + p.pnl, 0);
-            const upEl = document.getElementById('unrealized_pnl');
-            upEl.textContent = fmt(unrealized);
-            upEl.className = 'value ' + cls(unrealized);
-
-            // Open positions
-            document.getElementById('open_positions').innerHTML = data.positions.length === 0
-                ? '<tr><td colspan="9" style="color:#444;text-align:center;padding:20px">Esperando nuevas posiciones...</td></tr>'
-                : data.positions.map(p => `
-                <tr>
-                    <td>${p.market}</td>
-                    <td><span class="badge ${p.side.toLowerCase()}">${p.side}</span></td>
-                    <td><span class="cat">${p.category}</span></td>
-                    <td style="color:#666;font-size:0.75rem">${p.wallet_note || p.wallet.slice(0,10)}</td>
-                    <td>$${p.entry_price.toFixed(3)}</td>
-                    <td>$${p.current_price.toFixed(3)}</td>
-                    <td>$${p.bet_amount.toFixed(2)}</td>
-                    <td class="${cls(p.pnl)}">${fmt(p.pnl)}</td>
-                    <td class="${cls(p.pnl)}">${pct(p.entry_price, p.current_price)}</td>
-                </tr>`).join('');
-
-            // Closed positions
-            document.getElementById('closed_positions').innerHTML = data.closed_positions.length === 0
-                ? '<tr><td colspan="9" style="color:#444;text-align:center;padding:20px">Sin posiciones cerradas aún</td></tr>'
-                : data.closed_positions.map(p => `
-                <tr>
-                    <td>${p.market}</td>
-                    <td><span class="badge ${p.side.toLowerCase()}">${p.side}</span></td>
-                    <td><span class="cat">${p.category}</span></td>
-                    <td style="color:#666;font-size:0.75rem">${p.wallet_note || p.wallet.slice(0,10)}</td>
-                    <td>$${p.entry_price.toFixed(3)}</td>
-                    <td>$${p.current_price.toFixed(3)}</td>
-                    <td>$${p.bet_amount.toFixed(2)}</td>
-                    <td class="${cls(p.pnl)}">${fmt(p.pnl)}</td>
-                    <td class="${cls(p.pnl)}">${pct(p.entry_price, p.current_price)}</td>
-                </tr>`).join('');
-
-            // Wallets page
-            const allPos = [...data.positions, ...data.closed_positions];
-            const walletStats = {};
-            allPos.forEach(p => {
-                const k = p.wallet_note || p.wallet;
-                if (!walletStats[k]) walletStats[k] = { pnl: 0, trades: 0, wins: 0, addr: p.wallet, cat: p.category };
-                walletStats[k].pnl += p.pnl;
-                walletStats[k].trades++;
-                if (p.pnl > 0) walletStats[k].wins++;
-            });
-
-            document.getElementById('wallets_list').innerHTML = data.wallets
-                ? data.wallets.map(w => {
-                    const key = w.note || w.address;
-                    const s = walletStats[key] || { pnl: 0, trades: 0, wins: 0 };
-                    const wr = s.trades > 0 ? ((s.wins / s.trades) * 100).toFixed(0) + '%' : 'N/A';
-                    return `<div class="wallet-card">
-                        <div>
-                            <div class="name">${w.note || 'Unknown'}</div>
-                            <div class="addr">${w.address}</div>
-                            <span class="cat">${w.category}</span>
-                        </div>
-                        <div class="stats-mini">
-                            <div class="stat-mini"><div class="lbl">Trades</div><div>${s.trades}</div></div>
-                            <div class="stat-mini"><div class="lbl">Win Rate</div><div>${wr}</div></div>
-                            <div class="stat-mini"><div class="lbl">PNL</div><div class="${cls(s.pnl)}">${fmt(s.pnl)}</div></div>
-                        </div>
-                    </div>`;
-                }).join('')
-                : '<div style="color:#444;padding:20px">Cargando wallets...</div>';
-
-            // Analysis table
-            document.getElementById('analysis_table').innerHTML = Object.entries(walletStats).length === 0
-                ? '<tr><td colspan="7" style="color:#444;text-align:center;padding:20px">Sin trades aún</td></tr>'
-                : Object.entries(walletStats).map(([name, s]) => {
-                    const wr = s.trades > 0 ? ((s.wins / s.trades) * 100).toFixed(0) + '%' : 'N/A';
-                    const trades = allPos.filter(p => (p.wallet_note || p.wallet) === name);
-                    const best = trades.length > 0 ? Math.max(...trades.map(p => p.pnl)) : 0;
-                    const worst = trades.length > 0 ? Math.min(...trades.map(p => p.pnl)) : 0;
-                    return `<tr>
-                        <td>${name}</td>
-                        <td><span class="cat">${s.cat}</span></td>
-                        <td>${s.trades}</td>
-                        <td class="${s.trades > 0 && s.wins/s.trades >= 0.5 ? 'green' : 'red'}">${wr}</td>
-                        <td class="${cls(s.pnl)}">${fmt(s.pnl)}</td>
-                        <td class="green">${fmt(best)}</td>
-                        <td class="red">${fmt(worst)}</td>
-                    </tr>`;
-                }).join('');
-        }
-
-        update();
-        setInterval(update, 30000);
-    </script>
+load();
+setInterval(load, 30000);
+</script>
 </body>
 </html>
