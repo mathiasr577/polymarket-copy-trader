@@ -10,14 +10,30 @@ app = Flask(__name__)
 
 order_queue = []
 
-state = {
-    "balance": 0,
-    "cash": 0,
-    "portfolio": 0,
-    "positions": [],
-    "closed_positions": [],
-    "total_pnl": 0.0
-}
+STATE_FILE = "state.json"
+
+def load_state():
+    try:
+        with open(STATE_FILE) as f:
+            return json.load(f)
+    except:
+        return {
+            "balance": 0,
+            "cash": 0,
+            "portfolio": 0,
+            "positions": [],
+            "closed_positions": [],
+            "total_pnl": 0.0
+        }
+
+def save_state():
+    try:
+        with open(STATE_FILE, "w") as f:
+            json.dump(state, f)
+    except Exception as e:
+        print(f"Error guardando state: {e}")
+
+state = load_state()
 
 PROXY_WALLET = os.getenv("PROXY_WALLET", "0x5fa918d6752074476dCfa68ae5618fC70Bc49945")
 
@@ -41,6 +57,7 @@ def job():
     if portfolio > 0:
         state["portfolio"] = portfolio
     update_positions(state, order_queue)
+    save_state()
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(job, 'interval', seconds=30)
@@ -95,6 +112,7 @@ def update_balance():
     if balance > 0:
         state["cash"] = balance
         state["balance"] = balance
+        save_state()
     return jsonify({"ok": True})
 
 @app.route('/api/wallets')
