@@ -48,12 +48,13 @@ def execute_order(order, client, balance):
             bet_amount = balance * 0.05
             if bet_amount < 1:
                 print(f"Balance muy bajo (${balance:.2f}) — saltando {order['market']}")
-                return False
+                return False, balance
             size = round(bet_amount / order["price"], 2)
             size = max(size, 5.0)
         else:
             size = round(float(order["amount"]), 2)
             size = max(size, 5.0)
+            bet_amount = 0
 
         resp = client.create_and_post_order(OrderArgs(
             token_id=order["token_id"],
@@ -65,12 +66,14 @@ def execute_order(order, client, balance):
         success = resp.get("success", False)
         if success:
             print(f"✅ {side} {order['market']} | {status}")
+            if side == "BUY":
+                balance = balance - bet_amount
         else:
             print(f"❌ Falló: {order['market']} | {resp.get('errorMsg')}")
-        return success
+        return success, balance
     except Exception as e:
         print(f"❌ Error: {order['market']} | {e}")
-        return False
+        return False, balance
 
 def run():
     print("🟢 Executor iniciando en Railway...")
@@ -85,6 +88,7 @@ def run():
     cycle = 0
     while True:
         try:
+            # Leer balance real al inicio de cada ciclo
             balance = get_real_balance(client)
 
             if balance > 0:
@@ -98,14 +102,11 @@ def run():
             if orders:
                 print(f"📋 {len(orders)} ordenes en cola")
                 for order in orders:
-                    balance = get_real_balance(client)
                     if balance < 1:
                         print(f"Sin balance suficiente (${balance:.2f}), parando")
                         break
-                    success = execute_order(order, client, balance)
-                    if success and order["side"] == "BUY":
-                        print(f"⏳ Esperando balance on-chain...")
-                        time.sleep(15)
+                    success, balance = execute_order(order, client, balance)
+                    time.sleep(3)
                 requests.post(f"{RAILWAY_URL}/api/queue/clear")
 
         except Exception as e:
