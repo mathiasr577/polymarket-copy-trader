@@ -76,7 +76,7 @@ def get_state():
             wallet_stats[wk]["open"] += 1
 
     return jsonify({
-        "portfolio": round(state["portfolio"], 2),
+        "portfolio": round(state["cash"] + state["portfolio"], 2),
         "cash": round(state["cash"], 2),
         "balance": round(state["balance"], 2),
         "total_pnl": round(total_pnl, 2),
