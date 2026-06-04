@@ -41,35 +41,29 @@ td { padding: 10px 12px; border-top: 1px solid #21262d; }
 <body>
 <h1>🟢 Polymarket Bot</h1>
 <div class="updated" id="updated"></div>
-
 <div class="tabs">
   <div class="tab active" onclick="showPage('dashboard', this)">Dashboard</div>
   <div class="tab" onclick="showPage('wallets', this)">Wallets</div>
   <div class="tab" onclick="showPage('abiertas', this)">Abiertas</div>
   <div class="tab" onclick="showPage('cerradas', this)">Cerradas</div>
 </div>
-
 <div id="dashboard" class="page active">
   <div class="stats" id="stats"></div>
   <h2 style="color:#8b949e;font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Últimas posiciones</h2>
   <table><thead><tr><th>Mercado</th><th>Side</th><th>Wallet</th><th>Entry</th><th>Current</th><th>Bet</th><th>PNL</th></tr></thead>
   <tbody id="recent-body"></tbody></table>
 </div>
-
 <div id="wallets" class="page">
   <div id="wallet-cards"></div>
 </div>
-
 <div id="abiertas" class="page">
   <table><thead><tr><th>Mercado</th><th>Side</th><th>Wallet</th><th>Entry</th><th>Current</th><th>Bet</th><th>PNL</th></tr></thead>
   <tbody id="open-body"></tbody></table>
 </div>
-
 <div id="cerradas" class="page">
   <table><thead><tr><th>Mercado</th><th>Side</th><th>Wallet</th><th>Entry</th><th>Close</th><th>Bet</th><th>PNL</th></tr></thead>
   <tbody id="closed-body"></tbody></table>
 </div>
-
 <script>
 function showPage(name, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -77,86 +71,70 @@ function showPage(name, el) {
   document.getElementById(name).classList.add('active');
   el.classList.add('active');
 }
-
 function badge(side) {
   const s = (side || '').toUpperCase();
   if (s === 'YES') return `<span class="badge yes">YES</span>`;
   if (s === 'NO') return `<span class="badge no">NO</span>`;
   return `<span class="badge other">${side}</span>`;
 }
-
 function pc(v) { return v >= 0 ? 'green' : 'red'; }
-function ps(v) { return (v >= 0 ? '+' : '') + '$' + Math.abs(v).toFixed(2); }
-function pss(v) { return (v >= 0 ? '+' : '-') + '$' + Math.abs(v).toFixed(2); }
-
+function ps(v) { return (v >= 0 ? '+' : '-') + '$' + Math.abs(v).toFixed(2); }
 async function load() {
   try {
     const r = await fetch('/api/state');
     const d = await r.json();
-
     const now = new Date().toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit'});
     document.getElementById('updated').textContent = `Actualizado: ${now}`;
-
     const closed = d.closed_positions || [];
     const open = d.positions || [];
     const wins = closed.filter(p => p.pnl > 0).length;
     const wr = closed.length > 0 ? Math.round(wins / closed.length * 100) : 0;
     const wrColor = wr >= 55 ? 'green' : wr >= 45 ? 'yellow' : 'red';
-
     document.getElementById('stats').innerHTML = `
       <div class="stat"><div class="label">Cash disponible</div><div class="value green">$${d.cash || d.balance}</div></div>
       <div class="stat"><div class="label">Portfolio total</div><div class="value gray">$${d.portfolio || 0}</div></div>
-      <div class="stat"><div class="label">PNL Total</div><div class="value ${pc(d.total_pnl)}">${pss(d.total_pnl)}</div></div>
-      <div class="stat"><div class="label">PNL Abierto</div><div class="value ${pc(d.open_pnl)}">${pss(d.open_pnl)}</div></div>
+      <div class="stat"><div class="label">PNL Total</div><div class="value ${pc(d.total_pnl)}">${ps(d.total_pnl)}</div></div>
+      <div class="stat"><div class="label">PNL Abierto</div><div class="value ${pc(d.open_pnl)}">${ps(d.open_pnl)}</div></div>
       <div class="stat"><div class="label">Win Rate</div><div class="value ${wrColor}">${wr}%</div></div>
       <div class="stat"><div class="label">Abiertas</div><div class="value gray">${open.length}</div></div>
       <div class="stat"><div class="label">Cerradas</div><div class="value gray">${closed.length}</div></div>
     `;
-
     const recientes = [...open].slice(-8).reverse();
     document.getElementById('recent-body').innerHTML = recientes.map(p => `
       <tr><td>${p.market}</td><td>${badge(p.side)}</td><td>${p.wallet_note||''}</td>
       <td>$${p.entry_price.toFixed(3)}</td><td>$${p.current_price.toFixed(3)}</td>
       <td>$${p.bet_amount.toFixed(2)}</td><td class="${pc(p.pnl)}">${ps(p.pnl)}</td></tr>
     `).join('');
-
     document.getElementById('open-body').innerHTML = open.map(p => `
       <tr><td>${p.market}</td><td>${badge(p.side)}</td><td>${p.wallet_note||''}</td>
       <td>$${p.entry_price.toFixed(3)}</td><td>$${p.current_price.toFixed(3)}</td>
       <td>$${p.bet_amount.toFixed(2)}</td><td class="${pc(p.pnl)}">${ps(p.pnl)}</td></tr>
     `).join('');
-
     document.getElementById('closed-body').innerHTML = [...closed].reverse().map(p => `
       <tr><td>${p.market}</td><td>${badge(p.side)}</td><td>${p.wallet_note||''}</td>
       <td>$${p.entry_price.toFixed(3)}</td><td>$${(p.close_price||0).toFixed(3)}</td>
       <td>$${p.bet_amount.toFixed(2)}</td><td class="${pc(p.pnl)}">${ps(p.pnl)}</td></tr>
     `).join('');
-
     const ws = d.wallet_stats || {};
     document.getElementById('wallet-cards').innerHTML = Object.entries(ws)
       .sort((a,b) => b[1].pnl - a[1].pnl)
       .map(([name, s]) => {
-        const wr = s.total > 0 ? Math.round(s.wins / (s.total - s.open) * 100) || 0 : 0;
+        const closed_count = s.total - s.open;
+        const wr = closed_count > 0 ? Math.round(s.wins / closed_count * 100) : 0;
         return `
           <div class="wallet-card">
-            <div class="wallet-header">
-              <div class="wallet-name">${name}</div>
-            </div>
+            <div class="wallet-header"><div class="wallet-name">${name}</div></div>
             <div class="wstats">
-              <div class="ws"><div class="wl">PNL</div><div class="wv ${pc(s.pnl)}">${pss(s.pnl)}</div></div>
-              <div class="ws"><div class="wl">Win Rate</div><div class="wv ${s.wins/(s.total-s.open||1)>=.5?'green':'red'}">${wr}%</div></div>
+              <div class="ws"><div class="wl">PNL</div><div class="wv ${pc(s.pnl)}">${ps(s.pnl)}</div></div>
+              <div class="ws"><div class="wl">Win Rate</div><div class="wv ${wr>=50?'green':'red'}">${wr}%</div></div>
               <div class="ws"><div class="wl">Trades</div><div class="wv gray">${s.total}</div></div>
               <div class="ws"><div class="wl">Abiertas</div><div class="wv gray">${s.open}</div></div>
               <div class="ws"><div class="wl">Wins</div><div class="wv green">${s.wins}</div></div>
             </div>
           </div>`;
       }).join('');
-
-  } catch(e) {
-    console.error(e);
-  }
+  } catch(e) { console.error(e); }
 }
-
 load();
 setInterval(load, 30000);
 </script>
