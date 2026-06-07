@@ -1,37 +1,7 @@
 [
     {
-        "address": "0x204f72f35326db932158cba6adff0b9a1da95e14",
-        "category": "sports",
-        "note": "swisstony - #4 mensual"
-    },
-    {
-        "address": "0xde7be6d489bce070a959e0cb813128ae659b5f4b",
-        "category": "sports",
-        "note": "wan123 - #8 mensual"
-    },
-    {
-        "address": "0xa380c504a480f591c7dfbf9944fac3994b9b21ff",
-        "category": "general",
-        "note": "JewishNinja - #12 mensual"
-    },
-    {
-        "address": "0xfbf3d501e88815464642d0e913f15379c3eeb218",
-        "category": "sports",
-        "note": "VPenguin - #8 mensual"
-    },
-    {
         "address": "0xfe787d2da716d60e8acff57fb87eb13cd4d10319",
         "category": "sports",
         "note": "ferrariChampions2026 - #12 mensual"
-    },
-    {
-        "address": "0xe8dd7741ccb12350957ec71e9ee332e0d1e6ec86",
-        "category": "finance",
-        "note": "influenz.eth - #1 finanzas"
-    },
-    {
-        "address": "0xbd0477e08d82d35a855ff19644a88a9213d8fbb0",
-        "category": "politics",
-        "note": "yuhyuhyuhy - #2 menciones"
     }
 ]
