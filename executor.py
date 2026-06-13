@@ -41,7 +41,7 @@ def report_balance(balance):
 
 def execute_order(order, client, balance):
     try:
-        from py_clob_client_v2.clob_types import OrderArgs
+        from py_clob_client_v2.clob_types import MarketOrderArgs, OrderType
         side = order["side"]
 
         if side == "BUY":
@@ -49,25 +49,30 @@ def execute_order(order, client, balance):
             if bet_amount < 1:
                 print(f"Balance muy bajo (${balance:.2f}) — saltando {order['market']}")
                 return False, balance
-            size = round(bet_amount / order["price"], 2)
-            size = max(size, 5.0)
-        else:
+
+            market_order = client.create_market_order(MarketOrderArgs(
+                token_id=order["token_id"],
+                amount=bet_amount,
+                side=side,
+            ))
+            resp = client.post_order(market_order, OrderType.FOK)
+            balance = balance - bet_amount
+
+        else:  # SELL
+            from py_clob_client_v2.clob_types import OrderArgs
             size = round(float(order["amount"]), 2)
             size = max(size, 5.0)
-            bet_amount = 0
+            resp = client.create_and_post_order(OrderArgs(
+                token_id=order["token_id"],
+                price=round(order["price"], 4),
+                size=size,
+                side=side,
+            ))
 
-        resp = client.create_and_post_order(OrderArgs(
-            token_id=order["token_id"],
-            price=round(order["price"], 4),
-            size=size,
-            side=side,
-        ))
-        status = resp.get("status", "")
         success = resp.get("success", False)
+        status = resp.get("status", "")
         if success:
             print(f"✅ {side} {order['market']} | {status}")
-            if side == "BUY":
-                balance = balance - bet_amount
         else:
             print(f"❌ Falló: {order['market']} | {resp.get('errorMsg')}")
         return success, balance
@@ -88,7 +93,6 @@ def run():
     cycle = 0
     while True:
         try:
-            # Leer balance real al inicio de cada ciclo
             balance = get_real_balance(client)
 
             if balance > 0:
