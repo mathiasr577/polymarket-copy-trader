@@ -60,7 +60,7 @@ def job():
     save_state()
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(job, 'interval', seconds=30)
+scheduler.add_job(job, 'interval', seconds=15)
 scheduler.start()
 
 @app.route('/')
