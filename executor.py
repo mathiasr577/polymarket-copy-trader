@@ -33,6 +33,21 @@ def get_real_balance(client):
         print(f"Error leyendo balance: {e}")
         return 0
 
+def get_current_price(token_id):
+    try:
+        r = requests.get(
+            f"https://clob.polymarket.com/last-trade-price?token_id={token_id}",
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=5
+        )
+        if r.status_code == 200:
+            price = float(r.json().get("price", 0))
+            if 0.02 <= price <= 0.98:
+                return price
+        return None
+    except:
+        return None
+
 def report_balance(balance):
     try:
         requests.post(f"{RAILWAY_URL}/api/update_balance", json={"balance": balance}, timeout=5)
@@ -41,7 +56,7 @@ def report_balance(balance):
 
 def execute_order(order, client, balance):
     try:
-        from py_clob_client_v2.clob_types import MarketOrderArgs, OrderType
+        from py_clob_client_v2.clob_types import OrderArgs
         side = order["side"]
 
         if side == "BUY":
@@ -50,21 +65,35 @@ def execute_order(order, client, balance):
                 print(f"Balance muy bajo (${balance:.2f}) — saltando {order['market']}")
                 return False, balance
 
-            market_order = client.create_market_order(MarketOrderArgs(
+            # Obtener precio actual del mercado
+            price = get_current_price(order["token_id"])
+            if price is None:
+                print(f"SKIP precio inválido: {order['market']}")
+                return False, balance
+
+            size = round(bet_amount / price, 2)
+            size = max(size, 5.0)
+
+            resp = client.create_and_post_order(OrderArgs(
                 token_id=order["token_id"],
-                amount=bet_amount,
+                price=round(price, 4),
+                size=size,
                 side=side,
             ))
-            resp = client.post_order(market_order, OrderType.FOK)
             balance = balance - bet_amount
 
         else:  # SELL
-            from py_clob_client_v2.clob_types import OrderArgs
             size = round(float(order["amount"]), 2)
             size = max(size, 5.0)
+
+            # Para SELL usar precio actual también
+            price = get_current_price(order["token_id"])
+            if price is None:
+                price = round(order["price"], 4)
+
             resp = client.create_and_post_order(OrderArgs(
                 token_id=order["token_id"],
-                price=round(order["price"], 4),
+                price=round(price, 4),
                 size=size,
                 side=side,
             ))
@@ -72,7 +101,7 @@ def execute_order(order, client, balance):
         success = resp.get("success", False)
         status = resp.get("status", "")
         if success:
-            print(f"✅ {side} {order['market']} | {status}")
+            print(f"✅ {side} {order['market']} | ${bet_amount if side == 'BUY' else 0:.2f} | {status}")
         else:
             print(f"❌ Falló: {order['market']} | {resp.get('errorMsg')}")
         return success, balance
